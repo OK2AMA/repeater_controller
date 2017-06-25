@@ -1,29 +1,34 @@
 // Selektikvní volba do rádiového převáděče Karel 
 
-//
+// -12V                       70cm TX4 D7
+// GND
+// 4m TX1 A3
+// 2m RX1 A4                   D13 4m RX4              
+// 2m TX2 A5
+// -
+// -
+// 70cm RX3 D3             
 
 const int ledPin =  A0;      // the number of the LED pin
 const int DTMF_std = 12;     
 const int DTMF1 = 8;     
 const int DTMF2 = 9;     
-const int DTMF3 = 10;     // píp
+const int DTMF3 = 10;     
 const int DTMF4 = 11;
      
-const int RX_1 = A4;    
-const int RX_2 = A6;     // výstup pro vypnutí TX stanice po 60s.
-const int RX_3 = 3;     
-const int RX_4 = 13;
+const int RX_vhf = A4;    
+const int RX_2 = A6;     
+const int RX_uhf = 3;     
+const int RX_mb = 13;
     
-const int TX_1 = A3;     // vysila se uzemnenim
-const int TX_2 = A5;
+const int TX_mb = A3;    
+const int TX_vhf = A5;
 const int TX_3 = A7;
-const int TX_4 = 7;
+const int TX_uhf = 7;
 const int TX_5 = 6;
 const int TX_6 = 5;
 
-
-
-const byte beep = 11;    // dtmf3
+const byte beep = 11;    // dtmf3, beep output
 
 byte byt ;
 byte data ;
