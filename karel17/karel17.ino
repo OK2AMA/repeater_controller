@@ -1,5 +1,6 @@
 // Selektikvní volba do rádiového převáděče Karel 
 
+//
 
 const int ledPin =  A0;      // the number of the LED pin
 const int DTMF_std = 12;     
