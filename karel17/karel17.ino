@@ -95,27 +95,28 @@ void setup() {
 }
 
 void loop(){
-  while(digitalRead(RX_1) == 1)
+  while(digitalRead(RX_vhf) == 1)
   {   
-      while(digitalRead(RX_1) == 1)
+      while(digitalRead(RX_vhf) == 1)
   {   
-     digitalWrite(TX_1, HIGH);     
+     digitalWrite(TX_vhf, HIGH);     
   }
   delay(800);
   }
   
-  while(digitalRead(RX_2) == 1)
+  while(digitalRead(RX_mb) == 1)
   {   
-      while(digitalRead(RX_2) == 1)
+      while(digitalRead(RX_mb) == 1)
   {   
-     digitalWrite(TX_2, HIGH);     
+     digitalWrite(TX_mb, HIGH);     
   }
   delay(800);
   }
 
-  while(digitalRead(RX_3) == 1)
+  
+  while(digitalRead(RX_uhf) == 1)
   {   
-      while(digitalRead(RX_3) == 1)
+      while(digitalRead(RX_uhf) == 1)
   {   
      digitalWrite(TX_3, HIGH);     
   }
