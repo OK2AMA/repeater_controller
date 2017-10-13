@@ -32,7 +32,6 @@ const int TX_3 = 5;
 
 const int beep_pin = 3;    // dtmf3, beep output
 
-
 boolean blok_zvuk ;  // blokace zvuku vypbuta po zapnutí
 boolean blok_roger = false ;  // true = zapnut po startu ROGER // ma byt true = zaple po startu
 boolean DTMF_byla ;  // roger pouze bez dtmf
@@ -69,7 +68,6 @@ void telegraf(byte zdroj) // zdroj: 0Bdddzzzzz 3x delka a nasledne 5x znak
   byte delka = (zdroj & B11100000) >> 5;
   byte znaky = (zdroj & B00011111);
   delay(100);
-
   for  ( i = 0 ; i < delka ; i++)
   {
     if (((znaky & B00010000 )) == B00010000)
@@ -249,7 +247,7 @@ void dtmf_service() {
       delay(300);
       //  telegraf(B01001000);// 010 =2 / 01--- == .- == A
       telegraf(B01001000);// a -.-.  delka 4 : 100/1010-
-      telegraf(B10011010);// h
+      telegraf(B10000000);// h
       telegraf(B01111100);// o
       telegraf(B10001110);// j
       delay(50);
@@ -266,18 +264,16 @@ void dtmf_service() {
       //tx_quiet();
       break;
   }// konec case ****
-
 }
 
 void setup() {
-
-
 
   i = 0;
   blok_zvuk = false;  // blokace zvuku vypbuta po zapnutí
   // true = zapnut po startu ROGER // ma byt true = zaple po startu
   DTMF_byla = false;  // roger pouze bez dtmf
   opadavani_pomalu = true;   // zapnuto opadavani
+  
 
 
   //  Serial.begin(19200);
@@ -325,24 +321,29 @@ void setup() {
 
 void loop() {
   unsigned long CurrentMillis = millis();
-
-  // unsigned long
-  // if((unsigned long)(currentMillis - PreviousMillis) >= 3600000)
-  //   {
-  //   PreviosMillis = currentMillis;
-  //   casovac = 0
-  //   }
-
-  //if((unsigned long) CurrentMillis < 120000)
-  //  crossband_mode == true;
-  //  else
-  //  crossband_mode == false;
+  unsigned long TempMillis;
 
 
-  if ((unsigned long) CurrentMillis <= 1500 )
+  if ((unsigned long) CurrentMillis < 15000 )
   {
     crossband_mode = true;
     crossband_extended = true;
+  }
+  
+  if ((unsigned long) CurrentMillis > ( 15000 + TempMillis))
+  {
+   TempMillis = CurrentMillis;
+   digitalWrite(TX_mb, HIGH);
+   delay(300);
+   telegraf(B10001000);// h
+   digitalWrite(TX_mb, LOW);   
+   delay(300);
+
+   digitalWrite(TX_vhf, HIGH);
+   delay(300);
+   telegraf(B10001000);// h
+   digitalWrite(TX_vhf, LOW);   
+   delay(300);
   }
 
 
@@ -361,10 +362,9 @@ void loop() {
       while (digitalRead(RX_mb) == 1)
       {
         if (digitalRead(DTMF_std) == 1)
-          dtmf_service();  
-        delay(30);
+          dtmf_service();
+        delay(5);
       }
-      delay(30);
     }
     delay(270);// z duvodu skrnuti po odklicovani aby byl cisty roger
     tone(beep_pin, 700); // -
@@ -390,9 +390,8 @@ void loop() {
       {
         if (digitalRead(DTMF_std) == 1)
           dtmf_service();
-        delay(30);
+        delay(5);
       }
-      delay(30);
     }
     delay(270);
     tone(beep_pin, 700); // -
@@ -417,22 +416,12 @@ void loop() {
       delay(1500);
   }
 
-  while (0) // digitalRead(RX_1) == 1
+  if (TX_vhf == HIGH) // GP900 nesnasi rychle zaklicovani po sobě
   {
-    while (digitalRead(RX_1) == 1)
-    {
-      digitalWrite(TX_1, HIGH);
-    }
-    if (opadavani_pomalu == true)
-      delay(1500);
+    delay(300);
+    digitalWrite(TX_vhf, LOW);
   }
-
-
-
-  digitalWrite(TX_mb, LOW);
-  digitalWrite(TX_vhf, LOW);
-  digitalWrite(TX_uhf, LOW);
-  digitalWrite(TX_1, LOW);
+  tx_quiet();   
 }
 
 
