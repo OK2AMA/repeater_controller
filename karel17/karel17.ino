@@ -203,8 +203,7 @@ void dtmf_service() {
     case 0x81 : // zapnout crossband
       crossband_mode = true;
       break;
-    case 0x9A :
-    case 0x80 : // zapnout crossband
+    case 0x9A : // zapnout crossband
       crossband_mode = false;
       crossband_extended = false;
       break;
@@ -266,13 +265,9 @@ void dtmf_service() {
       stop_TX_dtmf();
       //tx_quiet();
       break;
-
   }// konec case ****
 
 }
-
-
-
 
 void setup() {
 
@@ -344,7 +339,6 @@ void loop() {
   //  crossband_mode == false;
 
 
-
   if ((unsigned long) CurrentMillis <= 1500 )
   {
     crossband_mode = true;
@@ -352,8 +346,7 @@ void loop() {
   }
 
 
-
-  if (digitalRead(RX_mb) == 1)
+  while (digitalRead(RX_mb) == 1)
   {
     while (digitalRead(RX_mb) == 1)
     {
@@ -382,7 +375,7 @@ void loop() {
       delay(1700);
   }
 
-  if (digitalRead(RX_vhf) == 1)
+  while (digitalRead(RX_vhf) == 1)
   {
     while (digitalRead(RX_vhf) == 1)
     {
