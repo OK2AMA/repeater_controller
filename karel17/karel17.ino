@@ -416,6 +416,7 @@ void loop() {
       delay(1500);
   }
 
+
   if (TX_vhf == HIGH) // GP900 nesnasi rychle zaklicovani po sobě
   {
     delay(300);
