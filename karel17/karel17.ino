@@ -437,6 +437,7 @@ void loop() {
     if (opadavani_pomalu == true)
       delay(2200);
     TX_delay_millis = CurrentMillis;
+    
   }
 
 
