@@ -11,6 +11,8 @@
 // -
 // 70cm RX3 D3
 
+// Nefunguje blokovani, spatne cte DTMF a pipa roger do hovoru(obcas)
+
 const int ledPin =  A0;      // the number of the LED pin
 const int DTMF_std = 12;
 const int DTMF1 = 8;
@@ -30,6 +32,8 @@ const int TX_uhf = 7;
 const int TX_2 = 6;
 const int TX_3 = 5;
 
+
+
 const int beep_pin = 3;    // dtmf3, beep output
 
 boolean blok_zvuk ;  // blokace zvuku vypbuta po zapnutí
@@ -38,11 +42,34 @@ boolean DTMF_byla ;  // roger pouze bez dtmf
 boolean opadavani_pomalu = true;   // zapnuto opadavani
 boolean crossband_mode = false;
 boolean crossband_extended = false;
+boolean hourly = true;
+
+
+unsigned long CurrentMillis = millis();
+unsigned long TempMillis;
+unsigned long TX_delay_millis;
+unsigned long PreviousMillis;
+unsigned long how_often_alarm;
 
 long vse = 0;
 long data = 0;
 int band_activity = 0;
 int i = 0;
+
+boolean read_debounc(byte debounce_pin)
+{
+  boolean temp = 0;
+  for (int i = 0; i <= 100; i++ )
+  {
+    if (digitalRead(debounce_pin) == 1)
+      temp = temp + 1 ;
+    delayMicroseconds(2);
+  }
+  if (temp >= 50)
+    return true;
+  else
+    return false;
+}
 
 void tx_quiet() {
   digitalWrite(TX_mb, LOW);
@@ -108,26 +135,24 @@ void stop_TX_dtmf() {
 
 void dtmf_service() {
   tx_quiet();
-  delay(70);
+  delay(20);
   if (digitalRead(RX_mb) == 1)
     band_activity = 1;
-
   if (digitalRead(RX_vhf) == 1)
     band_activity = 2;
-
   if (digitalRead(RX_uhf) == 1)
     band_activity = 3;
 
-  //digitalWrite(ledPin, HIGH);
   vse = 0;
-  while ((digitalRead(RX_mb) == 1) or (digitalRead(RX_vhf) == 1)) { // RX
+  while ((digitalRead(RX_mb) == 1) or (digitalRead(RX_vhf) == 1))
+  { // RX
     if (digitalRead(DTMF_std) == 1 )
     {
       delay(10);
       cteni_bytu();
       while (digitalRead(DTMF_std) == 1 )
       {
-        //   now waiting for interrupt DTMF
+        delay(5);
       }
     }
     delay(10);
@@ -150,22 +175,39 @@ void dtmf_service() {
       break;
     case 0x01 :
       break;
-    case 0x2811 :
+    case 0x87A :
+      hourly = false;
       break;
-    case 0x281A :  // na radiu 2810
+    case 0x871 :// 1 minut
+      hourly = true;
+      how_often_alarm = 1 * 60 * 1000;
       break;
-    case 0x2821 :
+    case 0x872 :
+      hourly = true;
+      how_often_alarm = 2 * 60 * 1000;
       break;
-    case 0x282A :  // 2820
+    case 0x873 :
+      hourly = true;
+      how_often_alarm = 5 * 60 * 1000;
       break;
-    case 0x461 :  // zap. 2m linku
+    case 0x874 :
+      hourly = true;
+      how_often_alarm = 15 * 60 * 1000;
+
+    case 0x875 :
+      hourly = true;
+      how_often_alarm = 30 * 60 * 1000;
       break;
-    case 0x46A : // 4610
+    case 0x876 :
+      hourly = true;
+      how_often_alarm = 60 * 60 * 1000;
       break;
-    case 0x8721 :
+
+    case 0x877 :
+      hourly = true;
+      how_often_alarm = 120 * 60 * 1000;
       break;
-    case 0x872A :
-      break;
+
     case 0x936 : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
       pinMode(TX_mb,  INPUT);     // pin TX je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm)
       pinMode(TX_vhf, INPUT);
@@ -176,10 +218,24 @@ void dtmf_service() {
       pinMode(TX_vhf, OUTPUT);
       pinMode(TX_uhf, OUTPUT);
       break;
-    case 0x926 : // kompletní zapovězení akustického pípání, rogery, identifikace ...
+
+    case 0x42A : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
+      pinMode(TX_mb,  INPUT);     // pin TX je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm)
+      break;
+    case 0x421 : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
+      pinMode(TX_mb,  OUTPUT);     // pin TX je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm
+      break;
+    case 0x43A : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
+      pinMode(TX_vhf,  INPUT);     // pin TX je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm)
+      break;
+    case 0x431 : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
+      pinMode(TX_vhf,  OUTPUT);     // pin TX je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm
+      break;
+
+    case 0x51 : // kompletní zapovězení akustického pípání, rogery, identifikace ...
       pinMode(beep_pin, INPUT);     // pinD4 je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm)
       break;
-    case 0x927 : // v základu je povoleno
+    case 0x5A : // v základu je povoleno
       pinMode(beep_pin, OUTPUT);
       break;
     // po relaci ovladaci prvky  * * * * * * * * * * * * * * * *
@@ -225,13 +281,6 @@ void dtmf_service() {
       setup(); // soft reset !!
       break;
 
-    case 0x48 :
-      //analog_cteni(baterie);
-      break;
-    case 0x49 :
-      //analog_cteni(teplota);
-      break;
-
     case 0x5 : // telegrafická identifikace
       start_TX_dtmf();
       delay(300);
@@ -273,7 +322,19 @@ void setup() {
   // true = zapnut po startu ROGER // ma byt true = zaple po startu
   DTMF_byla = false;  // roger pouze bez dtmf
   opadavani_pomalu = true;   // zapnuto opadavani
-  
+  blok_zvuk ;  // blokace zvuku vypbuta po zapnutí
+  blok_roger = false ;  // true = zapnut po startu ROGER // ma byt true = zaple po startu
+  DTMF_byla ;  // roger pouze bez dtmf
+  opadavani_pomalu = true;   // zapnuto opadavani
+  crossband_mode = false;
+  crossband_extended = false;
+  hourly = true;
+  how_often_alarm = 60 * 60 * 1000;
+
+  long vse = 0;
+  long data = 0;
+  int band_activity = 0;
+  int i = 0;
 
 
   //  Serial.begin(19200);
@@ -309,43 +370,45 @@ void setup() {
   //  telegraf(B01111100);// o
   //  telegraf(B10001110);// j
 
-
   delay(1500);
   digitalWrite(TX_mb, LOW);
   digitalWrite(TX_vhf, LOW);
   digitalWrite(TX_uhf, LOW);
   digitalWrite(TX_1, LOW);
-  unsigned long PreviousMillis = 0;
 }
 
 
 void loop() {
-  unsigned long CurrentMillis = millis();
-  unsigned long TempMillis;
+  CurrentMillis = millis();
 
 
-  if ((unsigned long) CurrentMillis < 15000 )
+  if (0)//(unsigned long) CurrentMillis < 15000
   {
     crossband_mode = true;
     crossband_extended = true;
   }
-  
-  if ((unsigned long) CurrentMillis > ( 15000 + TempMillis))
+
+  if (hourly == true)
   {
-   TempMillis = CurrentMillis;
-   digitalWrite(TX_mb, HIGH);
-   delay(300);
-   telegraf(B10001000);// h
-   digitalWrite(TX_mb, LOW);   
-   delay(300);
+    if ((unsigned long) CurrentMillis > (TX_delay_millis + 10000))
+    {
+      if ((unsigned long) CurrentMillis > ( how_often_alarm + TempMillis))
+      {
+        TempMillis = CurrentMillis;
+        digitalWrite(TX_mb, HIGH);
+        delay(300);
+        telegraf(B10001000);// h
+        digitalWrite(TX_mb, LOW);
+        delay(300);
 
-   digitalWrite(TX_vhf, HIGH);
-   delay(300);
-   telegraf(B10001000);// h
-   digitalWrite(TX_vhf, LOW);   
-   delay(300);
+        digitalWrite(TX_vhf, HIGH);
+        delay(300);
+        telegraf(B10001000);// h
+        digitalWrite(TX_vhf, LOW);
+        delay(300);
+      }
+    }
   }
-
 
   while (digitalRead(RX_mb) == 1)
   {
@@ -372,35 +435,40 @@ void loop() {
       delay(200);
     noTone(beep_pin);
     if (opadavani_pomalu == true)
-      delay(1700);
+      delay(2200);
+    TX_delay_millis = CurrentMillis;
   }
 
-  while (digitalRead(RX_vhf) == 1)
-  {
-    while (digitalRead(RX_vhf) == 1)
-    {
-      if (crossband_mode == false)
-        digitalWrite(TX_vhf, HIGH);
-      else
-        digitalWrite(TX_mb, HIGH);
-      if (crossband_extended == true)
-        digitalWrite(TX_vhf, HIGH);
 
-      while (digitalRead(RX_vhf) == 1)
-      {
-        if (digitalRead(DTMF_std) == 1)
-          dtmf_service();
-        delay(5);
-      }
+
+
+
+  while (read_debounc(RX_vhf) == 1)
+  {
+    if (crossband_mode == false)
+      digitalWrite(TX_vhf, HIGH);
+    else
+      digitalWrite(TX_mb, HIGH);
+    if (crossband_extended == true)
+      digitalWrite(TX_vhf, HIGH);
+
+    while (read_debounc(RX_vhf) == 1)
+    {
+      if (read_debounc(DTMF_std) == 1)
+        dtmf_service();
     }
+
+
     delay(270);
-    tone(beep_pin, 700); // -
+    tone(beep_pin, 700); 
     if (blok_roger == false)
       delay(200);
     noTone(beep_pin);
     if (opadavani_pomalu == true)
-      delay(1700);
+      delay(2200);
+    TX_delay_millis = CurrentMillis;
   }
+
 
 
   while (0) //  digitalRead(RX_uhf) == 1
@@ -422,7 +490,7 @@ void loop() {
     delay(300);
     digitalWrite(TX_vhf, LOW);
   }
-  tx_quiet();   
+  tx_quiet();
 }
 
 
