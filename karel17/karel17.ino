@@ -227,28 +227,25 @@ void dtmf_service() {
       how_often_alarm = 120 * 60 * 1000;
       break;
 
-    case 0x936 : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
-      pinMode(TX_mb,  INPUT);     // pin TX je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm)
-      pinMode(TX_vhf, INPUT);
-      pinMode(TX_uhf, INPUT);
+    case 0x936 : // disable all TX
+      en_TX_mb = false;
+      en_TX_vhf = false;  
       break;
-    case 0x937 : // v základu je vždy TX povoleno, a tímto se opět povoluje
-      pinMode(TX_mb,  OUTPUT);
-      pinMode(TX_vhf, OUTPUT);
-      pinMode(TX_uhf, OUTPUT);
+    case 0x937 : // enable all TX
+      en_TX_mb = true;
+      en_TX_vhf = true;  
       break;
 
-    case 0x42A : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
-      pinMode(TX_mb,  INPUT);     // pin TX je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm)
+    case 0x42A : // disable MB tx
+      en_TX_mb = false;
+    case 0x421 : // enable MB tx
+      en_TX_mb = true;
       break;
-    case 0x421 : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
-      pinMode(TX_mb,  OUTPUT);     // pin TX je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm
-      break;
-    case 0x43A : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
-      pinMode(TX_vhf,  INPUT);     // pin TX je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm)
+    case 0x43A : // disable VHF tx 
+      en_TX_vhf = false;  
       break;
     case 0x431 : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
-      pinMode(TX_vhf,  OUTPUT);     // pin TX je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm
+      en_TX_vhf = true; 
       break;
 
     case 0x51 : // kompletní zapovězení akustického pípání, rogery, identifikace ...
