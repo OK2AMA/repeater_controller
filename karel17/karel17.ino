@@ -33,8 +33,6 @@ const int TX_1 = A7;
 const int TX_2 = 6;
 const int TX_3 = 5;
 
-
-
 const int beep_pin = 3;    // dtmf3, beep output
 
 boolean blok_zvuk ;  // blokace zvuku vypbuta po zapnutí
@@ -69,22 +67,22 @@ void f_TX_mb()
 
 void f_TX_vhf()
 {
-  if(en_TX_mb == true)
-    digitalWrite(TX_mb, HIGH);
+  if(en_TX_vhf == true)
+    digitalWrite(TX_vhf, HIGH);
   else
-    digitalWrite(TX_mb, LOW);
+    digitalWrite(TX_vhf, LOW);
 }
 
-boolean read_debounc(byte debounce_pin)
+boolean read_debounc(int debounce_pin)
 {
-  boolean temp = 0;
-  for (int i = 0; i <= 100; i++ )
+  byte temp = 0;
+  for (byte i = 0; i <= 200; i++ )
   {
     if (digitalRead(debounce_pin) == 1)
       temp = temp + 1 ;
     delayMicroseconds(2);
   }
-  if (temp >= 50)
+  if (temp >= 100)
     return true;
   else
     return false;
@@ -154,33 +152,33 @@ void stop_TX_dtmf() {
 
 void dtmf_service() {
   tx_quiet();
-  delay(20);
-  if (digitalRead(RX_mb) == 1)
+  delay(10);
+  if (read_debounc(RX_mb) == 1)
     band_activity = 1;
-  if (digitalRead(RX_vhf) == 1)
+  if (read_debounc(RX_vhf) == 1)
     band_activity = 2;
-  if (digitalRead(RX_uhf) == 1)
+  if (read_debounc(RX_uhf) == 1)
     band_activity = 3;
 
   vse = 0;
-  while ((digitalRead(RX_mb) == 1) or (digitalRead(RX_vhf) == 1))
+  while ((read_debounc(RX_mb) == 1) or (read_debounc(RX_vhf) == 1))
   { // RX
-    if (digitalRead(DTMF_std) == 1 )
+    if (read_debounc(DTMF_std) == 1 )
     {
-      delay(10);
+      delay(5);
       cteni_bytu();
       while (digitalRead(DTMF_std) == 1 )
       {
         delay(5);
       }
     }
-    delay(10);
+    delay(5);
   }// waiting for stop transmitting
 
   //--- zde projde program po odklíčování-------------------------------
   switch (vse) {
     /*
-      DTMF kod odlisnost od BCD,  cisla nastesti odpovidaji
+      DTMF code is different compare to BCD
       DTMF  BCD
       0 =   A
       S =   B
@@ -409,13 +407,13 @@ void loop() {
         TempMillis = CurrentMillis;
         f_TX_mb();
         delay(300);
-        telegraf(B10001000);// h
+        telegraf(B10001000);// L
         digitalWrite(TX_mb, LOW);
         delay(300);
 
         f_TX_vhf();
         delay(300);
-        telegraf(B10001000);// h
+        telegraf(B10001000);// L
         digitalWrite(TX_vhf, LOW);
         delay(300);
       }
@@ -448,7 +446,6 @@ void loop() {
     if (opadavani_pomalu == true)
       delay(2200);
     TX_delay_millis = CurrentMillis;
-    
   }
 
 
