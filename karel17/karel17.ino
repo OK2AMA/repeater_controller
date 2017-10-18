@@ -12,6 +12,12 @@
 // 70cm RX3 D3
 
 // Nefunguje blokovani, spatne cte DTMF a pipa roger do hovoru(obcas)
+//unguje 431 a 430 vypínání VHF
+//nefunguje 421 a 420 vypínání MB, celkové vypínání 936 a 937 funguje
+// hlášení po čase 871 a 872 nefunguje, delší prodlevy sem nezkoušel
+// *******************************************************************
+// opraveno zablkováni GP9OO po rychlem zaklicovani
+// opraveno blokovani MB ( 421 )
 
 const int ledPin =  A0;      // the number of the LED pin
 const int DTMF_std = 12;
@@ -59,7 +65,7 @@ int i = 0;
 
 void f_TX_mb()
 {
-  if(en_TX_mb == true)
+  if (en_TX_mb == true)
     digitalWrite(TX_mb, HIGH);
   else
     digitalWrite(TX_mb, LOW);
@@ -67,7 +73,7 @@ void f_TX_mb()
 
 void f_TX_vhf()
 {
-  if(en_TX_vhf == true)
+  if (en_TX_vhf == true)
     digitalWrite(TX_vhf, HIGH);
   else
     digitalWrite(TX_vhf, LOW);
@@ -227,24 +233,30 @@ void dtmf_service() {
 
     case 0x936 : // disable all TX
       en_TX_mb = false;
-      en_TX_vhf = false;  
+      en_TX_vhf = false;
       break;
     case 0x937 : // enable all TX
       en_TX_mb = true;
-      en_TX_vhf = true;  
+      en_TX_vhf = true;
       break;
 
     case 0x42A : // disable MB tx
       en_TX_mb = false;
+      break;
     case 0x421 : // enable MB tx
       en_TX_mb = true;
       break;
-    case 0x43A : // disable VHF tx 
-      en_TX_vhf = false;  
+    case 0x43A : // disable VHF tx
+      en_TX_vhf = false;
       break;
-    case 0x431 : // kompletní zapovězení TX ze strany selektivky !! pro naprostou rádiovou neviditelnost ;-)
-      en_TX_vhf = true; 
+    case 0x431 : // enable VHF tx
+      en_TX_vhf = true;
       break;
+
+    case 0x146 :
+      setup(); // soft reset !!
+      break;
+
 
     case 0x51 : // kompletní zapovězení akustického pípání, rogery, identifikace ...
       pinMode(beep_pin, INPUT);     // pinD4 je nutno stahovat k zemi odporem cca 2 - 10 k ohm, pri zablok TX je na nem vyosoká impendace (spojená s + vnitřním odporem 100k ohm)
@@ -278,21 +290,6 @@ void dtmf_service() {
     case 0x91 :
       crossband_mode = true;
       crossband_extended = true;
-      break;
-    case 0x274A : // vypnout vsechnu identifikaci po relaci
-      //opadavani_predtim = false;
-      //opadavani_pomalu = false;
-      //blok_roger = true;
-      break;
-
-    case 0x2741 :   // zapnout vsechnu identifikaci po relaci
-      //opadavani_predtim = true;
-      //opadavani_pomalu = true;
-      //blok_roger = false;
-      break;
-
-    case 0x146 :
-      setup(); // soft reset !!
       break;
 
     case 0x5 : // telegrafická identifikace
@@ -333,7 +330,6 @@ void setup() {
 
   i = 0;
   blok_zvuk = false;  // blokace zvuku vypbuta po zapnutí
-  // true = zapnut po startu ROGER // ma byt true = zaple po startu
   DTMF_byla = false;  // roger pouze bez dtmf
   opadavani_pomalu = true;   // zapnuto opadavani
   blok_zvuk ;  // blokace zvuku vypbuta po zapnutí
@@ -392,15 +388,16 @@ void setup() {
 void loop() {
   CurrentMillis = millis();
 
-  if (0)//(unsigned long) CurrentMillis < 15000
+  if ((unsigned long) CurrentMillis < 15000)//
   {
-    crossband_mode = true;
-    crossband_extended = true;
+    // co bude delat 15s po zapnuti
+    //crossband_mode = true;
+    //crossband_extended = true;
   }
 
-  if (hourly == true)
+  if (hourly == true) // pravidelne hlaseni
   {
-    if ((unsigned long) CurrentMillis > (TX_delay_millis + 10000))
+    if ((unsigned long) CurrentMillis > (TX_delay_millis + 10000)) // aby neklicovalo v prubehu hovoru
     {
       if ((unsigned long) CurrentMillis > ( how_often_alarm + TempMillis))
       {
@@ -422,22 +419,21 @@ void loop() {
 
   while (read_debounc(RX_mb) == 1)
   {
+
+    if (crossband_mode == false)
+      f_TX_mb();
+    else
+      f_TX_vhf();
+
+    if (crossband_extended == true)
+      f_TX_mb();
+
     while (read_debounc(RX_mb) == 1)
     {
-      if (crossband_mode == false)
-        f_TX_mb();
-      else
-        f_TX_vhf();
-        
-      if (crossband_extended == true)
-        f_TX_mb();
-        
-      while (read_debounc(RX_mb) == 1)
-      {
-        if (read_debounc(DTMF_std) == 1)
-          dtmf_service();
-      }
+      if (read_debounc(DTMF_std) == 1)
+        dtmf_service();
     }
+
     delay(270);// z duvodu skrnuti po odklicovani aby byl cisty roger
     tone(beep_pin, 700); // -
     if (1)
@@ -458,7 +454,7 @@ void loop() {
       f_TX_vhf();
     else
       f_TX_mb();
-      
+
     if (crossband_extended == true)
       f_TX_vhf();
 
@@ -469,7 +465,7 @@ void loop() {
     }
 
     delay(270);
-    tone(beep_pin, 700); 
+    tone(beep_pin, 700);
     if (blok_roger == false)
       delay(200);
     noTone(beep_pin);
@@ -481,8 +477,8 @@ void loop() {
 
   if (TX_vhf == HIGH) // GP900 nesnasi rychle zaklicovani po sobě
   {
-    delay(300);
     digitalWrite(TX_vhf, LOW);
+    delay(350); // jak dlouho ceka
   }
   tx_quiet();
 }
