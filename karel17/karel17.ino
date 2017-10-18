@@ -27,8 +27,9 @@ const int RX_mb = A4;
 
 const int TX_mb = A5;
 const int TX_vhf = A3;
-const int TX_1 = A7;
 const int TX_uhf = 7;
+
+const int TX_1 = A7;
 const int TX_2 = 6;
 const int TX_3 = 5;
 
@@ -44,6 +45,8 @@ boolean crossband_mode = false;
 boolean crossband_extended = false;
 boolean hourly = true;
 
+boolean en_TX_mb = true;
+boolean en_TX_vhf = true;
 
 unsigned long CurrentMillis = millis();
 unsigned long TempMillis;
@@ -55,6 +58,22 @@ long vse = 0;
 long data = 0;
 int band_activity = 0;
 int i = 0;
+
+void f_TX_mb()
+{
+  if(en_TX_mb == true)
+    digitalWrite(TX_mb, HIGH);
+  else
+    digitalWrite(TX_mb, LOW);
+}
+
+void f_TX_vhf()
+{
+  if(en_TX_mb == true)
+    digitalWrite(TX_mb, HIGH);
+  else
+    digitalWrite(TX_mb, LOW);
+}
 
 boolean read_debounc(byte debounce_pin)
 {
@@ -117,11 +136,11 @@ void telegraf(byte zdroj) // zdroj: 0Bdddzzzzz 3x delka a nasledne 5x znak
 
 void start_TX_dtmf() {
   if (band_activity == 1)
-    digitalWrite(TX_mb, HIGH);
+    f_TX_mb();
   if (band_activity == 2)
-    digitalWrite(TX_vhf, HIGH);
+    f_TX_mb();
   if (band_activity == 3)
-    digitalWrite(TX_uhf, HIGH);
+    f_TX_mb();
 }
 
 void stop_TX_dtmf() {
@@ -359,10 +378,7 @@ void setup() {
 
   //pinMode(beep_pin, OUTPUT); // tone(pin, frequency, duration)
 
-  digitalWrite(TX_mb, LOW);
   digitalWrite(TX_vhf, HIGH);
-  digitalWrite(TX_uhf, LOW);
-  digitalWrite(TX_1, LOW);
 
   //start();  // uvodni znelka s TX
   telegraf(B01000000);// a -.-.  delka 4 : 100/1010-
@@ -370,7 +386,7 @@ void setup() {
   //  telegraf(B01111100);// o
   //  telegraf(B10001110);// j
 
-  delay(1500);
+  delay(1000);
   digitalWrite(TX_mb, LOW);
   digitalWrite(TX_vhf, LOW);
   digitalWrite(TX_uhf, LOW);
@@ -380,7 +396,6 @@ void setup() {
 
 void loop() {
   CurrentMillis = millis();
-
 
   if (0)//(unsigned long) CurrentMillis < 15000
   {
@@ -395,13 +410,13 @@ void loop() {
       if ((unsigned long) CurrentMillis > ( how_often_alarm + TempMillis))
       {
         TempMillis = CurrentMillis;
-        digitalWrite(TX_mb, HIGH);
+        f_TX_mb();
         delay(300);
         telegraf(B10001000);// h
         digitalWrite(TX_mb, LOW);
         delay(300);
 
-        digitalWrite(TX_vhf, HIGH);
+        f_TX_vhf();
         delay(300);
         telegraf(B10001000);// h
         digitalWrite(TX_vhf, LOW);
@@ -410,23 +425,22 @@ void loop() {
     }
   }
 
-  while (digitalRead(RX_mb) == 1)
+  while (read_debounc(RX_mb) == 1)
   {
-    while (digitalRead(RX_mb) == 1)
+    while (read_debounc(RX_mb) == 1)
     {
       if (crossband_mode == false)
-        digitalWrite(TX_mb, HIGH);
+        f_TX_mb();
       else
-        digitalWrite(TX_vhf, HIGH);
+        f_TX_vhf();
+        
       if (crossband_extended == true)
-        digitalWrite(TX_mb, HIGH);
-      if (digitalRead(DTMF_std) == 1)
-        dtmf_service();
-      while (digitalRead(RX_mb) == 1)
+        f_TX_mb();
+        
+      while (read_debounc(RX_mb) == 1)
       {
-        if (digitalRead(DTMF_std) == 1)
+        if (read_debounc(DTMF_std) == 1)
           dtmf_service();
-        delay(5);
       }
     }
     delay(270);// z duvodu skrnuti po odklicovani aby byl cisty roger
@@ -447,18 +461,18 @@ void loop() {
   while (read_debounc(RX_vhf) == 1)
   {
     if (crossband_mode == false)
-      digitalWrite(TX_vhf, HIGH);
+      f_TX_vhf();
     else
-      digitalWrite(TX_mb, HIGH);
+      f_TX_mb();
+      
     if (crossband_extended == true)
-      digitalWrite(TX_vhf, HIGH);
+      f_TX_vhf();
 
     while (read_debounc(RX_vhf) == 1)
     {
       if (read_debounc(DTMF_std) == 1)
         dtmf_service();
     }
-
 
     delay(270);
     tone(beep_pin, 700); 
@@ -468,21 +482,6 @@ void loop() {
     if (opadavani_pomalu == true)
       delay(2200);
     TX_delay_millis = CurrentMillis;
-  }
-
-
-
-  while (0) //  digitalRead(RX_uhf) == 1
-  {
-    while (digitalRead(RX_uhf) == 1)
-    {
-      digitalWrite(TX_3, HIGH);
-    }
-    tone(beep_pin, 400); // -
-    delay(120);
-    noTone(beep_pin);
-    if (opadavani_pomalu == true)
-      delay(1500);
   }
 
 
