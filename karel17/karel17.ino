@@ -203,32 +203,31 @@ void dtmf_service() {
       break;
     case 0x871 :// 1 minut
       hourly = true;
-      how_often_alarm = 1 * 60 * 1000;
+      how_often_alarm = 1 * 60 ;
       break;
     case 0x872 :
       hourly = true;
-      how_often_alarm = 2 * 60 * 1000;
+      how_often_alarm = 2 * 60 ;
       break;
     case 0x873 :
       hourly = true;
-      how_often_alarm = 5 * 60 * 1000;
+      how_often_alarm = 5 * 60 ;
       break;
     case 0x874 :
       hourly = true;
-      how_often_alarm = 15 * 60 * 1000;
-
+      how_often_alarm = 15 * 60 ;
+      break;
     case 0x875 :
       hourly = true;
-      how_often_alarm = 30 * 60 * 1000;
+      how_often_alarm = 30 * 60 ;
       break;
     case 0x876 :
       hourly = true;
-      how_often_alarm = 60 * 60 * 1000;
+      how_often_alarm = 60 * 60 ;
       break;
-
     case 0x877 :
       hourly = true;
-      how_often_alarm = 120 * 60 * 1000;
+      how_often_alarm = 120 * 60 ;
       break;
 
     case 0x936 : // disable all TX
@@ -339,8 +338,9 @@ void setup() {
   crossband_mode = false;
   crossband_extended = false;
   hourly = true;
-  how_often_alarm = 1 * 60 * 1000;
-
+  how_often_alarm = 1 * 60;
+  TempMillis = millis()/1000;
+  
   long vse = 0;
   long data = 0;
   int band_activity = 0;
@@ -385,19 +385,19 @@ void setup() {
 
 
 void loop() {
-  CurrentMillis = millis();
+  CurrentMillis = millis()/1000;
 
-  if ((unsigned long) CurrentMillis < (5*60*1000) )//prvnich 5 minut se bude dit:
+  if (1)//prvnich 5 minut se bude dit: .. (unsigned long) CurrentMillis < (5*60*1000) 
   {
-    hourly == true; 
-    how_often_alarm = 1 * 60 * 1000;
+    //hourly == true; 
+    //how_often_alarm = 1 * 60 ;
     //crossband_mode = true;
     //crossband_extended = true;
   }
 
   if (hourly == true) // pravidelne hlaseni
   {
-    if ((unsigned long) CurrentMillis > (TX_delay_millis + 10000)) // aby neklicovalo v prubehu hovoru
+    if (1) // aby neklicovalo v prubehu hovoru .. (unsigned long) CurrentMillis > (TX_delay_millis + 10000)
     {
       if ((unsigned long) CurrentMillis > ( how_often_alarm + TempMillis))
       {
