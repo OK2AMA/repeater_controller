@@ -338,7 +338,7 @@ void setup() {
   crossband_mode = false;
   crossband_extended = false;
   hourly = true;
-  how_often_alarm = 1 * 60;
+  how_often_alarm = 60 * 60;
   TempMillis = millis()/1000;
   TX_delay_millis = millis()/1000;
   
