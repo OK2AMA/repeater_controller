@@ -52,11 +52,11 @@ boolean hourly = true;
 boolean en_TX_mb = true;
 boolean en_TX_vhf = true;
 
-unsigned long CurrentMillis = millis();
-unsigned long TempMillis;
-unsigned long TX_delay_millis;
-unsigned long PreviousMillis;
-unsigned long how_often_alarm;
+unsigned long CurrentMillis = 0;
+unsigned long TempMillis = 0;
+unsigned long TX_delay_millis = 0;
+unsigned long PreviousMillis = 0;
+unsigned long how_often_alarm = 0;
 
 long vse = 0;
 long data = 0;
@@ -142,9 +142,9 @@ void start_TX_dtmf() {
   if (band_activity == 1)
     f_TX_mb();
   if (band_activity == 2)
-    f_TX_mb();
-  if (band_activity == 3)
-    f_TX_mb();
+    f_TX_vhf();
+  //if (band_activity == 3)
+    //f_TX_uhf();
 }
 
 void stop_TX_dtmf() {
@@ -339,7 +339,7 @@ void setup() {
   crossband_mode = false;
   crossband_extended = false;
   hourly = true;
-  how_often_alarm = 60 * 60 * 1000;
+  how_often_alarm = 1 * 60 * 1000;
 
   long vse = 0;
   long data = 0;
@@ -371,7 +371,6 @@ void setup() {
 
   digitalWrite(TX_vhf, HIGH);
 
-  //start();  // uvodni znelka s TX
   telegraf(B01000000);// a -.-.  delka 4 : 100/1010-
   //  telegraf(B10011010);// h
   //  telegraf(B01111100);// o
@@ -388,9 +387,10 @@ void setup() {
 void loop() {
   CurrentMillis = millis();
 
-  if ((unsigned long) CurrentMillis < 15000)//
+  if ((unsigned long) CurrentMillis < (5*60*1000) )//prvnich 5 minut se bude dit:
   {
-    // co bude delat 15s po zapnuti
+    hourly == true; 
+    how_often_alarm = 1 * 60 * 1000;
     //crossband_mode = true;
     //crossband_extended = true;
   }
