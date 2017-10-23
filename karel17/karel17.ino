@@ -340,6 +340,7 @@ void setup() {
   hourly = true;
   how_often_alarm = 1 * 60;
   TempMillis = millis()/1000;
+  TX_delay_millis = millis()/1000;
   
   long vse = 0;
   long data = 0;
@@ -397,7 +398,7 @@ void loop() {
 
   if (hourly == true) // pravidelne hlaseni
   {
-    if (1) // aby neklicovalo v prubehu hovoru .. (unsigned long) CurrentMillis > (TX_delay_millis + 10000)
+    if ((unsigned long) CurrentMillis > (TX_delay_millis + 10)) // aby neklicovalo v prubehu hovoru .. 
     {
       if ((unsigned long) CurrentMillis > ( how_often_alarm + TempMillis))
       {
@@ -419,12 +420,11 @@ void loop() {
 
   while (read_debounc(RX_mb) == 1)
   {
-
     if (crossband_mode == false)
       f_TX_mb();
     else
       f_TX_vhf();
-
+      
     if (crossband_extended == true)
       f_TX_mb();
 
@@ -443,9 +443,6 @@ void loop() {
       delay(2200);
     TX_delay_millis = CurrentMillis;
   }
-
-
-
 
 
   while (read_debounc(RX_vhf) == 1)
