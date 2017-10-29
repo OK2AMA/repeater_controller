@@ -1,4 +1,7 @@
-// Selektikvní volba do rádiového převáděče Karel
+// Selektikvní volba do rádiového převáděče ******
+//
+// *******************************************************************
+// Nesouvislé poznámky:
 // https://www.itnetwork.cz/hardware-pc/arduino/arduino-stavba-jazyka
 // http://docs.uart.cz/docs/knihovny/
 // https://uart.cz/1466/sifrovani-v-arduinu/
@@ -10,15 +13,21 @@
 // -
 // -
 // 70cm RX3 D3
-
-// Nefunguje blokovani, spatne cte DTMF a pipa roger do hovoru(obcas)
-//unguje 431 a 430 vypínání VHF
-//nefunguje 421 a 420 vypínání MB, celkové vypínání 936 a 937 funguje
-// hlášení po čase 871 a 872 nefunguje, delší prodlevy sem nezkoušel
 // *******************************************************************
+// Seznam oprav:
+// Nefunguje blokovani, spatne cte DTMF a pipa roger do hovoru(obcas)
+// funguje 431 a 430 vypínání VHF
+// nefunguje 421 a 420 vypínání MB, celkové vypínání 936 a 937 funguje
+// hlášení po čase 871 a 872 nefunguje, delší prodlevy sem nezkoušel
+//
 // opraveno zablkováni GP9OO po rychlem zaklicovani
 // opraveno blokovani MB ( 421 )
+//
+// 171029 Oprava blokace roger MB, pridani separatni blokace pro jednotlive pasma
+//
 
+// *******************************************************************
+// Konstanty:
 const int ledPin =  A0;      // the number of the LED pin
 const int DTMF_std = 12;
 const int DTMF1 = 8;
@@ -41,16 +50,20 @@ const int TX_3 = 5;
 
 const int beep_pin = 3;    // dtmf3, beep output
 
-boolean blok_zvuk ;  // blokace zvuku vypbuta po zapnutí
-boolean blok_roger = false ;  // true = zapnut po startu ROGER // ma byt true = zaple po startu
-boolean DTMF_byla ;  // roger pouze bez dtmf
-boolean opadavani_pomalu = true;   // zapnuto opadavani
-boolean crossband_mode = false;
-boolean crossband_extended = false;
-boolean hourly = true;
+// *******************************************************************
+// Použité globální proměnné:
+boolean roger_mb;
+boolean roger_vhf;
+boolean opadavani_mb;   // rychlost opadavani TX
+boolean opadavani_vhf;   // rychlost opadavani TX
+boolean en_TX_mb;
+boolean en_TX_vhf;
 
-boolean en_TX_mb = true;
-boolean en_TX_vhf = true;
+boolean DTMF_byla ;  // roger pouze bez dtmf
+
+boolean crossband_mode;
+boolean crossband_extended;
+boolean hourly;
 
 unsigned long CurrentMillis = 0;
 unsigned long TempMillis = 0;
@@ -58,28 +71,31 @@ unsigned long TX_delay_millis = 0;
 unsigned long PreviousMillis = 0;
 unsigned long how_often_alarm = 0;
 
+unsigned int mb_counter;
+unsigned int vhf_counter;
+unsigned int days_counter;
+
 long vse = 0;
 long data = 0;
 int band_activity = 0;
 int i = 0;
 
+// *******************************************************************
+// Použité funkce:
+
 void f_TX_mb()
 {
   if (en_TX_mb == true)
     digitalWrite(TX_mb, HIGH);
-  else
-    digitalWrite(TX_mb, LOW);
 }
 
 void f_TX_vhf()
 {
   if (en_TX_vhf == true)
     digitalWrite(TX_vhf, HIGH);
-  else
-    digitalWrite(TX_vhf, LOW);
 }
 
-boolean read_debounc(int debounce_pin)
+boolean read_debounc(int debounce_pin) // osetreni zakmitu, univerzalni
 {
   byte temp = 0;
   for (byte i = 0; i <= 200; i++ )
@@ -110,6 +126,26 @@ void cteni_bytu()
   data = ((digitalRead(DTMF1) | data));
   data = data & B00001111;
   vse = (vse | data);
+}
+
+void telegraf(unsigned int napeti, byte seq_len)
+{
+  for (int i = 0; i < seq_len; i++)
+  {
+    if ((napeti & 1) == 1) {
+      tone(beep_pin, 900);
+      delay(1200);
+      noTone(beep_pin);
+    }
+    else {
+      tone(beep_pin, 700);
+      delay(500);
+      noTone(beep_pin);
+    }
+    napeti = napeti >> 1;
+    delay(700);
+  }
+  delay(500);
 }
 
 void telegraf(byte zdroj) // zdroj: 0Bdddzzzzz 3x delka a nasledne 5x znak
@@ -144,7 +180,7 @@ void start_TX_dtmf() {
   if (band_activity == 2)
     f_TX_vhf();
   //if (band_activity == 3)
-    //f_TX_uhf();
+  //f_TX_uhf();
 }
 
 void stop_TX_dtmf() {
@@ -264,18 +300,74 @@ void dtmf_service() {
       pinMode(beep_pin, OUTPUT);
       break;
     // po relaci ovladaci prvky  * * * * * * * * * * * * * * * *
-    case 0x61 : // blokovani rogeru
-      blok_roger = false;
-      break;
+    // ROGER:
     case 0x6A :
-      blok_roger = true;
+      if (band_activity == 1)
+        roger_mb = false;
+      if (band_activity == 2)
+        roger_vhf= false;
+        break;
+    case 0x61 :
+      if (band_activity == 1)
+        roger_mb = true;
+      if (band_activity == 2)
+        roger_vhf= true;
+        break;
+    case 0x62 : // blokovani rogeru
+      roger_mb = false;
+      roger_vhf = false;
       break;
-    case 0x7A : // rychlost opadavani
-      opadavani_pomalu = false;
+    case 0x63 :
+      roger_mb = true;
+      roger_vhf = true;
       break;
+    case 0x64 : 
+      roger_mb = true;
+      break;
+    case 0x65 : 
+      roger_mb = true;
+      break;
+    case 0x66 : 
+      roger_vhf = true;
+      break;
+    case 0x67 :
+      roger_vhf = true;
+      break;
+      
+    // Rychlost OPADAVANI:
+    case 0x7A :
+      if (band_activity == 1)
+        opadavani_mb = false;
+      if (band_activity == 2)
+        opadavani_vhf= false;
+        break;
     case 0x71 :
-      opadavani_pomalu = true;
+      if (band_activity == 1)
+        opadavani_mb = true;
+      if (band_activity == 2)
+        opadavani_vhf= true;
+        break;
+    case 0x72 : // blokovani rogeru
+      opadavani_mb = false;
+      opadavani_vhf = false;
       break;
+    case 0x73 :
+      opadavani_mb = true;
+      opadavani_vhf = true;
+      break;
+    case 0x74 : // blokovani rogeru
+      opadavani_mb = true;
+      break;
+    case 0x75 : // blokovani rogeru
+      opadavani_mb = true;
+      break;
+    case 0x76 : // blokovani rogeru
+      opadavani_vhf = true;
+      break;
+    case 0x77 : // blokovani rogeru
+      opadavani_vhf = true;
+      break;
+
     case 0x8A : // zapnout crossband
       crossband_mode = false;
       break;
@@ -326,26 +418,25 @@ void dtmf_service() {
 }
 
 void setup() {
-
-  i = 0;
-  blok_zvuk = false;  // blokace zvuku vypbuta po zapnutí
-  DTMF_byla = false;  // roger pouze bez dtmf
-  opadavani_pomalu = true;   // zapnuto opadavani
-  blok_zvuk ;  // blokace zvuku vypbuta po zapnutí
-  blok_roger = false ;  // true = zapnut po startu ROGER // ma byt true = zaple po startu
-  DTMF_byla ;  // roger pouze bez dtmf
-  opadavani_pomalu = true;   // zapnuto opadavani
+  DTMF_byla = false ;  // DTMF se vyskytla
+  opadavani_mb = true;
+  opadavani_vhf = true ;
+  roger_mb = false;
+  roger_vhf = false;
   crossband_mode = false;
   crossband_extended = false;
   hourly = true;
   how_often_alarm = 60 * 60;
-  TempMillis = millis()/1000;
-  TX_delay_millis = millis()/1000;
-  
+  TempMillis = millis() / 1000;
+  TX_delay_millis = millis() / 1000;
+
   long vse = 0;
   long data = 0;
   int band_activity = 0;
   int i = 0;
+
+  mb_counter = 0;
+  vhf_counter = 0;
 
 
   //  Serial.begin(19200);
@@ -386,11 +477,11 @@ void setup() {
 
 
 void loop() {
-  CurrentMillis = millis()/1000;
+  CurrentMillis = millis() / 1000;
 
-  if (1)//prvnich 5 minut se bude dit: .. (unsigned long) CurrentMillis < (5*60*1000) 
+  if (1)//prvnich 5 minut se bude dit: .. (unsigned long) CurrentMillis < (5*60*1000)
   {
-    //hourly == true; 
+    //hourly == true;
     //how_often_alarm = 1 * 60 ;
     //crossband_mode = true;
     //crossband_extended = true;
@@ -398,7 +489,7 @@ void loop() {
 
   if (hourly == true) // pravidelne hlaseni
   {
-    if ((unsigned long) CurrentMillis > (TX_delay_millis + 10)) // aby neklicovalo v prubehu hovoru .. 
+    if ((unsigned long) CurrentMillis > (TX_delay_millis + 10)) // aby neklicovalo v prubehu hovoru ..
     {
       if ((unsigned long) CurrentMillis > ( how_often_alarm + TempMillis))
       {
@@ -420,11 +511,12 @@ void loop() {
 
   while (read_debounc(RX_mb) == 1)
   {
+    mb_counter += 1;
     if (crossband_mode == false)
       f_TX_mb();
     else
       f_TX_vhf();
-      
+
     if (crossband_extended == true)
       f_TX_mb();
 
@@ -432,14 +524,15 @@ void loop() {
     {
       if (read_debounc(DTMF_std) == 1)
         dtmf_service();
+      if (read_debounc(RX_vhf) == 1)
+        f_TX_vhf();
     }
-
-    delay(270);// z duvodu skrnuti po odklicovani aby byl cisty roger
-    tone(beep_pin, 700); // -
-    if (1)
+    delay(270);
+    tone(beep_pin, 700);
+    if (roger_mb == true)
       delay(200);
     noTone(beep_pin);
-    if (opadavani_pomalu == true)
+    if (opadavani_mb == true)
       delay(2200);
     TX_delay_millis = CurrentMillis;
   }
@@ -447,6 +540,7 @@ void loop() {
 
   while (read_debounc(RX_vhf) == 1)
   {
+    vhf_counter += 1;
     if (crossband_mode == false)
       f_TX_vhf();
     else
@@ -459,14 +553,16 @@ void loop() {
     {
       if (read_debounc(DTMF_std) == 1)
         dtmf_service();
+      if (read_debounc(RX_mb) == 1)
+        f_TX_mb();
     }
 
     delay(270);
     tone(beep_pin, 700);
-    if (blok_roger == false)
+    if (roger_vhf == true)
       delay(200);
     noTone(beep_pin);
-    if (opadavani_pomalu == true)
+    if (opadavani_vhf == true)
       delay(2200);
     TX_delay_millis = CurrentMillis;
   }
