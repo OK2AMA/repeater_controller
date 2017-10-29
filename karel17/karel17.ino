@@ -73,7 +73,7 @@ unsigned long how_often_alarm = 0;
 
 unsigned int mb_counter;
 unsigned int vhf_counter;
-unsigned int days_counter;
+unsigned int day_counter;
 
 long vse = 0;
 long data = 0;
@@ -128,22 +128,42 @@ void cteni_bytu()
   vse = (vse | data);
 }
 
-void telegraf(unsigned int napeti, byte seq_len)
+void telegraf_digi(unsigned int napeti)
 {
+  unsigned int seq_len = 0;
+  if ( napeti <= 31 )
+    seq_len = 5;
+  else if ( napeti <= 63 )
+    seq_len = 6;
+  else if (napeti > 127)
+    seq_len = 7;
+  else if (napeti > 255)
+    seq_len = 8;
+  else if (napeti > 511)
+    seq_len = 9;
+  else if (napeti > 1023)
+    seq_len = 10;
+  else if (napeti > 2047)
+    seq_len = 11;
+  else if (napeti > 4095)
+    seq_len = 12;
+  else
+    seq_len = 16;
+
   for (int i = 0; i < seq_len; i++)
   {
     if ((napeti & 1) == 1) {
-      tone(beep_pin, 900);
+      tone(beep_pin, 800);
       delay(1200);
       noTone(beep_pin);
     }
     else {
       tone(beep_pin, 700);
-      delay(500);
+      delay(400);
       noTone(beep_pin);
     }
     napeti = napeti >> 1;
-    delay(700);
+    delay(1000);
   }
   delay(500);
 }
@@ -232,7 +252,45 @@ void dtmf_service() {
     */
     case 0x00 :
       break;
-    case 0x01 :
+    case 0x02 :
+      start_TX_dtmf();
+      telegraf_digi(mb_counter);
+      break;
+    case 0x03 :
+      start_TX_dtmf();
+      telegraf_digi(vhf_counter);
+      break;
+    case 0x04 :
+      CurrentMillis = millis() / 1000;
+      CurrentMillis = CurrentMillis / (60*60*24);
+      start_TX_dtmf();
+      telegraf_digi(day_counter+1);
+      break;
+
+    case 0x5 : // telegrafická identifikace
+      start_TX_dtmf();
+      delay(300);
+      //  telegraf(B01001000);// 010 =2 / 01--- == .- == A
+      telegraf(B10010100);// C -.-.  delka 4 : 100/1010-
+      telegraf(B10011010);// q
+      delay(50);
+      stop_TX_dtmf();
+      break;
+
+    case 0x6 : // telegrafická identifikace
+      start_TX_dtmf();
+      delay(300);
+      //  telegraf(B01001000);// 010 =2 / 01--- == .- == A
+      telegraf(B01001000);// a -.-.  delka 4 : 100/1010-
+      telegraf(B10000000);// h
+      telegraf(B01111100);// o
+      telegraf(B10001110);// j
+      delay(50);
+      stop_TX_dtmf();
+      break;
+
+    case 0x146 :
+      setup(); // soft reset !!
       break;
     case 0x87A :
       hourly = false;
@@ -274,7 +332,6 @@ void dtmf_service() {
       en_TX_mb = true;
       en_TX_vhf = true;
       break;
-
     case 0x42A : // disable MB tx
       en_TX_mb = false;
       break;
@@ -286,10 +343,6 @@ void dtmf_service() {
       break;
     case 0x431 : // enable VHF tx
       en_TX_vhf = true;
-      break;
-
-    case 0x146 :
-      setup(); // soft reset !!
       break;
 
 
@@ -305,14 +358,14 @@ void dtmf_service() {
       if (band_activity == 1)
         roger_mb = false;
       if (band_activity == 2)
-        roger_vhf= false;
-        break;
+        roger_vhf = false;
+      break;
     case 0x61 :
       if (band_activity == 1)
         roger_mb = true;
       if (band_activity == 2)
-        roger_vhf= true;
-        break;
+        roger_vhf = true;
+      break;
     case 0x62 : // blokovani rogeru
       roger_mb = false;
       roger_vhf = false;
@@ -321,32 +374,32 @@ void dtmf_service() {
       roger_mb = true;
       roger_vhf = true;
       break;
-    case 0x64 : 
+    case 0x64 :
       roger_mb = true;
       break;
-    case 0x65 : 
+    case 0x65 :
       roger_mb = true;
       break;
-    case 0x66 : 
+    case 0x66 :
       roger_vhf = true;
       break;
     case 0x67 :
       roger_vhf = true;
       break;
-      
+
     // Rychlost OPADAVANI:
     case 0x7A :
       if (band_activity == 1)
         opadavani_mb = false;
       if (band_activity == 2)
-        opadavani_vhf= false;
-        break;
+        opadavani_vhf = false;
+      break;
     case 0x71 :
       if (band_activity == 1)
         opadavani_mb = true;
       if (band_activity == 2)
-        opadavani_vhf= true;
-        break;
+        opadavani_vhf = true;
+      break;
     case 0x72 : // blokovani rogeru
       opadavani_mb = false;
       opadavani_vhf = false;
@@ -383,27 +436,6 @@ void dtmf_service() {
       crossband_extended = true;
       break;
 
-    case 0x5 : // telegrafická identifikace
-      start_TX_dtmf();
-      delay(300);
-      //  telegraf(B01001000);// 010 =2 / 01--- == .- == A
-      telegraf(B10010100);// C -.-.  delka 4 : 100/1010-
-      telegraf(B10011010);// q
-      delay(50);
-      stop_TX_dtmf();
-      break;
-
-    case 0x4 : // telegrafická identifikace
-      start_TX_dtmf();
-      delay(300);
-      //  telegraf(B01001000);// 010 =2 / 01--- == .- == A
-      telegraf(B01001000);// a -.-.  delka 4 : 100/1010-
-      telegraf(B10000000);// h
-      telegraf(B01111100);// o
-      telegraf(B10001110);// j
-      delay(50);
-      stop_TX_dtmf();
-      break;
 
     default: // unknown received DTMF code
       start_TX_dtmf();
@@ -435,9 +467,9 @@ void setup() {
   int band_activity = 0;
   int i = 0;
 
-  mb_counter = 0;
-  vhf_counter = 0;
-
+  //  mb_counter = 0;
+  //  vhf_counter = 0;
+  //  days_counter = 0;
 
   //  Serial.begin(19200);
   analogReference(DEFAULT);
