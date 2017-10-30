@@ -58,6 +58,7 @@ boolean opadavani_mb;   // rychlost opadavani TX
 boolean opadavani_vhf;   // rychlost opadavani TX
 boolean en_TX_mb;
 boolean en_TX_vhf;
+boolean indikace_provozu;
 
 boolean DTMF_byla ;  // roger pouze bez dtmf
 
@@ -135,17 +136,17 @@ void telegraf_digi(unsigned int napeti)
     seq_len = 5;
   else if ( napeti <= 63 )
     seq_len = 6;
-  else if (napeti > 127)
+  else if (napeti <= 127)
     seq_len = 7;
-  else if (napeti > 255)
+  else if (napeti <= 255)
     seq_len = 8;
-  else if (napeti > 511)
+  else if (napeti <= 511)
     seq_len = 9;
-  else if (napeti > 1023)
+  else if (napeti <= 1023)
     seq_len = 10;
-  else if (napeti > 2047)
+  else if (napeti <= 2047)
     seq_len = 11;
-  else if (napeti > 4095)
+  else if (napeti <= 4095)
     seq_len = 12;
   else
     seq_len = 16;
@@ -163,7 +164,7 @@ void telegraf_digi(unsigned int napeti)
       noTone(beep_pin);
     }
     napeti = napeti >> 1;
-    delay(8000);
+    delay(800);
   }
   delay(500);
 }
@@ -269,6 +270,15 @@ void dtmf_service() {
       telegraf_digi(day_counter+1);
       stop_TX_dtmf();
       break;
+ 
+    case 0x3A :
+      indikace_provozu = false;
+      break;
+
+    case 0x31 :
+      indikace_provozu = true;
+      break;
+
 
     case 0x5 : // telegrafická identifikace
       start_TX_dtmf();
@@ -459,11 +469,13 @@ void setup() {
   roger_mb = false;
   roger_vhf = false;
   
-  en_TX_mb == true;
-  en_TX_vhf == true;
+  en_TX_mb = true;
+  en_TX_vhf = true;
   
   crossband_mode = false;
   crossband_extended = false;
+
+  indikace_provozu = true;
   
   hourly = true;
   how_often_alarm = 60 * 60;
@@ -567,6 +579,8 @@ void loop() {
       if (read_debounc(RX_vhf) == 1)
         f_TX_vhf();
     }
+    if(((mb_counter % 5 ) == 0 ) and ( indikace_provozu == true ))
+      f_TX_vhf();
     delay(270);
     tone(beep_pin, 700);
     if (roger_mb == true)
@@ -596,7 +610,8 @@ void loop() {
       if (read_debounc(RX_mb) == 1)
         f_TX_mb();
     }
-
+    if(((vhf_counter % 5 ) == 0 ) and ( indikace_provozu == true ))
+      f_TX_mb();
     delay(270);
     tone(beep_pin, 700);
     if (roger_vhf == true)
