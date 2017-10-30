@@ -453,13 +453,18 @@ void dtmf_service() {
 }
 
 void setup() {
-  DTMF_byla = false ;  // DTMF se vyskytla
   opadavani_mb = true;
   opadavani_vhf = true ;
+  
   roger_mb = false;
   roger_vhf = false;
+  
+  en_TX_mb == true;
+  en_TX_vhf == true;
+  
   crossband_mode = false;
   crossband_extended = false;
+  
   hourly = true;
   how_often_alarm = 60 * 60;
   TempMillis = millis() / 1000;
@@ -601,7 +606,6 @@ void loop() {
       delay(2200);
     TX_delay_millis = CurrentMillis;
   }
-
 
   if (TX_vhf == HIGH) // GP900 nesnasi rychle zaklicovani po sobě
   {
