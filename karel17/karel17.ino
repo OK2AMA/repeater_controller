@@ -81,8 +81,18 @@ long data = 0;
 int band_activity = 0;
 int i = 0;
 
+extern volatile unsigned long timer0_millis;
+unsigned long new_value_zero = 0;
+
 // *******************************************************************
 // Použité funkce:
+
+void setMillis(unsigned long new_millis){
+  uint8_t oldSREG = SREG;
+  cli();
+  timer0_millis = new_millis;
+  SREG = oldSREG;
+}
 
 void f_TX_mb()
 {
@@ -530,6 +540,16 @@ void setup() {
 
 void loop() {
   CurrentMillis = millis() / 1000;
+  
+  if((unsigned long) CurrentMillis > (60*60*24*14)) // jednou za 50 dni by pretekl nekontrolovatelne citac, proto se kazdych 24 dnu vyresetuji interni hodiny
+  {
+    setMillis(new_value_zero);
+    day_counter += 14;
+    TempMillis = millis() / 1000;
+    TX_delay_millis = millis() / 1000;
+    CurrentMillis = millis() / 1000;
+  }
+  
 
   if (1)//prvnich 5 minut se bude dit: .. (unsigned long) CurrentMillis < (5*60*1000)
   {
@@ -538,7 +558,7 @@ void loop() {
     //crossband_mode = true;
     //crossband_extended = true;
   }
-
+  
   if (hourly == true) // pravidelne hlaseni
   {
     if ((unsigned long) CurrentMillis > (TX_delay_millis + 10)) // aby neklicovalo v prubehu hovoru ..
