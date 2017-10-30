@@ -149,7 +149,7 @@ void telegraf_digi(unsigned int napeti)
     seq_len = 12;
   else
     seq_len = 16;
-
+  delay(800);
   for (int i = 0; i < seq_len; i++)
   {
     if ((napeti & 1) == 1) {
@@ -163,7 +163,7 @@ void telegraf_digi(unsigned int napeti)
       noTone(beep_pin);
     }
     napeti = napeti >> 1;
-    delay(1000);
+    delay(8000);
   }
   delay(500);
 }
@@ -255,16 +255,19 @@ void dtmf_service() {
     case 0x02 :
       start_TX_dtmf();
       telegraf_digi(mb_counter);
+      stop_TX_dtmf();
       break;
     case 0x03 :
       start_TX_dtmf();
       telegraf_digi(vhf_counter);
+      stop_TX_dtmf();
       break;
     case 0x04 :
       CurrentMillis = millis() / 1000;
       CurrentMillis = CurrentMillis / (60*60*24);
       start_TX_dtmf();
       telegraf_digi(day_counter+1);
+      stop_TX_dtmf();
       break;
 
     case 0x5 : // telegrafická identifikace
@@ -375,13 +378,13 @@ void dtmf_service() {
       roger_vhf = true;
       break;
     case 0x64 :
-      roger_mb = true;
+      roger_mb = false;
       break;
     case 0x65 :
       roger_mb = true;
       break;
     case 0x66 :
-      roger_vhf = true;
+      roger_vhf = false;
       break;
     case 0x67 :
       roger_vhf = true;
@@ -409,13 +412,13 @@ void dtmf_service() {
       opadavani_vhf = true;
       break;
     case 0x74 : // blokovani rogeru
-      opadavani_mb = true;
+      opadavani_mb = false;
       break;
     case 0x75 : // blokovani rogeru
       opadavani_mb = true;
       break;
     case 0x76 : // blokovani rogeru
-      opadavani_vhf = true;
+      opadavani_vhf = false;
       break;
     case 0x77 : // blokovani rogeru
       opadavani_vhf = true;
