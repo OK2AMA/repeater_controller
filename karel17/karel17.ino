@@ -87,7 +87,7 @@ unsigned long new_value_zero = 0;
 // *******************************************************************
 // Použité funkce:
 
-void setMillis(unsigned long new_millis){
+void setMillis(unsigned long new_millis) {
   uint8_t oldSREG = SREG;
   cli();
   timer0_millis = new_millis;
@@ -275,12 +275,12 @@ void dtmf_service() {
       break;
     case 0x04 :
       CurrentMillis = millis() / 1000;
-      CurrentMillis = CurrentMillis / (60*60*24);
+      CurrentMillis = CurrentMillis / (60 * 60 * 24);
       start_TX_dtmf();
-      telegraf_digi(day_counter+1);
+      telegraf_digi(day_counter + 1);
       stop_TX_dtmf();
       break;
- 
+
     case 0x3A :
       indikace_provozu = false;
       break;
@@ -475,18 +475,18 @@ void dtmf_service() {
 void setup() {
   opadavani_mb = true;
   opadavani_vhf = true ;
-  
+
   roger_mb = false;
   roger_vhf = false;
-  
+
   en_TX_mb = true;
   en_TX_vhf = true;
-  
+
   crossband_mode = false;
   crossband_extended = false;
 
   indikace_provozu = true;
-  
+
   hourly = true;
   how_often_alarm = 60 * 60;
   TempMillis = millis() / 1000;
@@ -540,8 +540,8 @@ void setup() {
 
 void loop() {
   CurrentMillis = millis() / 1000;
-  
-  if((unsigned long) CurrentMillis > (60*60*24*14)) // jednou za 50 dni by pretekl nekontrolovatelne citac, proto se kazdych 24 dnu vyresetuji interni hodiny
+
+  if ((unsigned long) CurrentMillis > (60 * 60 * 24 * 14)) // jednou za 50 dni by pretekl nekontrolovatelne citac, proto se kazdych 24 dnu vyresetuji interni hodiny
   {
     setMillis(new_value_zero);
     day_counter += 14;
@@ -549,7 +549,7 @@ void loop() {
     TX_delay_millis = millis() / 1000;
     CurrentMillis = millis() / 1000;
   }
-  
+
 
   if (1)//prvnich 5 minut se bude dit: .. (unsigned long) CurrentMillis < (5*60*1000)
   {
@@ -558,7 +558,7 @@ void loop() {
     //crossband_mode = true;
     //crossband_extended = true;
   }
-  
+
   if (hourly == true) // pravidelne hlaseni
   {
     if ((unsigned long) CurrentMillis > (TX_delay_millis + 10)) // aby neklicovalo v prubehu hovoru ..
@@ -599,13 +599,15 @@ void loop() {
       if (read_debounc(RX_vhf) == 1)
         f_TX_vhf();
     }
-    if(((mb_counter % 5 ) == 0 ) and ( indikace_provozu == true ))
+    if (((mb_counter % 5 ) == 0 ) and ( indikace_provozu == true ))
       f_TX_vhf();
     delay(270);
     tone(beep_pin, 700);
     if (roger_mb == true)
       delay(200);
     noTone(beep_pin);
+    if (crossband_mode == false)
+      digitalWrite(TX_vhf, LOW);
     if (opadavani_mb == true)
       delay(2200);
     TX_delay_millis = CurrentMillis;
@@ -630,13 +632,15 @@ void loop() {
       if (read_debounc(RX_mb) == 1)
         f_TX_mb();
     }
-    if(((vhf_counter % 5 ) == 0 ) and ( indikace_provozu == true ))
+    if (((vhf_counter % 5 ) == 0 ) and ( indikace_provozu == true ))
       f_TX_mb();
     delay(270);
     tone(beep_pin, 700);
     if (roger_vhf == true)
       delay(200);
     noTone(beep_pin);
+    if (crossband_mode == false)
+      digitalWrite(TX_mb, LOW);
     if (opadavani_vhf == true)
       delay(2200);
     TX_delay_millis = CurrentMillis;
