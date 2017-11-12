@@ -263,17 +263,17 @@ void dtmf_service() {
     */
     case 0x00 :
       break;
-    case 0x02 :
+    case 0x022 :
       start_TX_dtmf();
       telegraf_digi(mb_counter);
       stop_TX_dtmf();
       break;
-    case 0x03 :
+    case 0x023 :
       start_TX_dtmf();
       telegraf_digi(vhf_counter);
       stop_TX_dtmf();
       break;
-    case 0x04 :
+    case 0x024 :
       CurrentMillis = millis() / 1000;
       CurrentMillis = CurrentMillis / (60 * 60 * 24);
       start_TX_dtmf();
